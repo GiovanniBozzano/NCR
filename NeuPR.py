@@ -3,11 +3,11 @@
 # Created by Bo Song on 2017/8/20
 from keras.regularizers import l1,l2
 from keras.models import Sequential,Model
-from keras.layers import Embedding,Input,Dense,merge,Flatten,Lambda
+from keras.layers import Embedding,Input,Dense,concatenate,multiply,Flatten,Lambda
 from keras.optimizers import Adam,Adagrad,SGD,RMSprop,Adadelta
 from keras.initializers import RandomNormal,TruncatedNormal
-from evaluate_ncr import evaluate_model
-from DataSet import DataSet
+from .evaluate_ncr import evaluate_model
+from .DataSet import DataSet
 from time import time
 import numpy as np
 import argparse
@@ -61,22 +61,22 @@ def get_model(num_users,num_items,mf_dim=10,layers=[10],reg_layers=[0,0,0,0],reg
     mf_item_latent_neg = Flatten()(MF_embedding_item(item_input_neg))
 
 
-    prefer_pos = merge([mf_user_latent, mf_item_latent_pos], mode='mul')
-    prefer_neg = merge([mf_user_latent, mf_item_latent_neg], mode='mul')
+    prefer_pos = multiply([mf_user_latent, mf_item_latent_pos])
+    prefer_neg = multiply([mf_user_latent, mf_item_latent_neg])
     prefer_neg = Lambda(lambda x: -x)(prefer_neg)
-    mf_vector = merge([prefer_pos, prefer_neg], mode='concat')
+    mf_vector = concatenate([prefer_pos, prefer_neg])
 
 
     mlp_user_latent=Flatten()(MLP_embedding_user(user_input))
     mlp_item_latent_pos=Flatten()(MLP_embedding_item(item_input_pos))
     mlp_item_latent_neg=Flatten()(MLP_embedding_item(item_input_neg))
     mlp_item_latent_neg=Lambda(lambda x:-x)(mlp_item_latent_neg)
-    mlp_vector=merge([mlp_user_latent,mlp_item_latent_pos,mlp_item_latent_neg],mode='concat')
+    mlp_vector=concatenate([mlp_user_latent,mlp_item_latent_pos,mlp_item_latent_neg])
     for idx in range(1,num_layer):
         layer=Dense(layers[idx],kernel_regularizer=l2(0.0000),activation='tanh',name="layer%d" %idx)
         mlp_vector=layer(mlp_vector)
 
-    predict_vector=merge([mf_vector,mlp_vector],mode='concat')
+    predict_vector=concatenate([mf_vector,mlp_vector])
 
     prediction=Dense(1,activation='sigmoid',kernel_initializer='lecun_uniform',name='prediction')(predict_vector)
     model=Model(inputs=[user_input,item_input_pos,item_input_neg],outputs=prediction)

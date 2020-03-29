@@ -5,7 +5,7 @@
 import tensorflow as tf
 import numpy as np
 from time import time
-from evaluate_ncf import evaluate_model
+from .evaluate_ncf import evaluate_model
 tf.set_random_seed(2018)
 
 class NCF:
@@ -103,7 +103,7 @@ def get_train_instances(train, num_negatives):
 
 
 if __name__=='__main__':
-    from DataSet import DataSet
+    from .DataSet import DataSet
 
     dataset = DataSet()
     dataset.loadClicks('data/'+'ml1m.txt',10,10)
